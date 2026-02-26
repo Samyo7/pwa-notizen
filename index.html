@@ -131,6 +131,49 @@
     }
     .suggestion:active{transform:scale(.99)}
     .suggestionSmall{font-size:12.5px;color:var(--muted);margin-top:4px}
+    /* Qibla-Kompass */
+.qiblaHeader{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.qiblaTitle{font-weight:900;font-size:16px}
+.qiblaMeta{color:rgba(255,255,255,.72);font-size:13px;margin-top:4px}
+.qiblaRow{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px}
+.compassCircle{
+  width:160px;height:160px;border-radius:999px;
+  border:1px solid var(--line);
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.08), rgba(255,255,255,0));
+  position:relative; display:grid; place-items:center;
+}
+.compassTick{
+  position:absolute; inset:10px; border-radius:999px;
+  border:1px dashed rgba(255,255,255,.12);
+}
+.compassNeedle{
+  width:4px;height:62px;border-radius:999px;
+  background:rgba(255,255,255,.92);
+  transform-origin:50% 54px;
+  transform:rotate(0deg);
+  position:absolute; top:22px; left:50%; margin-left:-2px;
+  box-shadow:0 6px 18px rgba(0,0,0,.4);
+}
+.compassDot{
+  width:12px;height:12px;border-radius:999px;
+  background:rgba(255,255,255,.9);
+  position:absolute;
+}
+.compassN{
+  position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  font-weight:900; font-size:12px; color:rgba(255,255,255,.85);
+}
+.qiblaInfo{
+  display:grid; gap:8px; min-width:220px; flex:1;
+}
+.qiblaInfo .line{display:flex; justify-content:space-between; gap:12px}
+.qiblaInfo .label{color:rgba(255,255,255,.7); font-size:13px}
+.qiblaInfo .value{font-variant-numeric:tabular-nums; font-weight:900}
+.qiblaBtn{
+  background:#ffffff;color:#0b0b0c;border:0;border-radius:14px;
+  padding:10px 12px;font-weight:900;font-size:14px;
+}
+.qiblaHint{color:rgba(255,255,255,.65); font-size:12.5px; line-height:1.3; margin-top:10px}
   </style>
 </head>
 
@@ -157,7 +200,45 @@
   </header>
 
   <div class="wrap" id="list"></div>
+<div class="wrap">
+  <div class="card" id="qiblaCard">
+    <div class="qiblaHeader">
+      <div>
+        <div class="qiblaTitle">Qibla Kompass</div>
+        <div class="qiblaMeta" id="qiblaStatus">Ort auswählen, dann Kompass aktivieren.</div>
+      </div>
+      <button class="qiblaBtn" id="qiblaEnable">Kompass aktivieren</button>
+    </div>
 
+    <div class="qiblaRow">
+      <div class="compassCircle" aria-label="Kompass">
+        <div class="compassTick"></div>
+        <div class="compassN">N</div>
+        <div class="compassNeedle" id="qiblaNeedle"></div>
+        <div class="compassDot"></div>
+      </div>
+
+      <div class="qiblaInfo">
+        <div class="line">
+          <div class="label">Qibla Richtung</div>
+          <div class="value" id="qiblaBearing">—</div>
+        </div>
+        <div class="line">
+          <div class="label">Kompass Richtung</div>
+          <div class="value" id="deviceHeading">—</div>
+        </div>
+        <div class="line">
+          <div class="label">Nadel Drehung</div>
+          <div class="value" id="needleRotation">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qiblaHint">
+      Tipp: iPhone einmal in einer „8“ bewegen (Kalibrierung). Kompass braucht Zugriff auf Bewegungssensoren.
+    </div>
+  </div>
+</div>
   <div class="wrap">
     <div class="card">
       <div class="footerCard">
@@ -291,6 +372,13 @@ const Sun = (() => {
 /* =========================
    UI Elemente
    ========================= */
+  // Qibla UI
+const qiblaStatusEl = document.getElementById("qiblaStatus");
+const qiblaEnableBtn = document.getElementById("qiblaEnable");
+const qiblaNeedleEl = document.getElementById("qiblaNeedle");
+const qiblaBearingEl = document.getElementById("qiblaBearing");
+const deviceHeadingEl = document.getElementById("deviceHeading");
+const needleRotationEl = document.getElementById("needleRotation");
 const listEl = document.getElementById("list");
 const gregEl = document.getElementById("greg");
 const hijriEl = document.getElementById("hijri");
@@ -307,6 +395,101 @@ locEl.textContent = PLACE ? PLACE.name : "Kein Ort gewählt";
 /* =========================
    Helfer
    ========================= */
+  // Kaaba Koordinaten (Qibla Ziel)
+const KAABA = { lat: 21.422487, lon: 39.826206 };
+
+let deviceHeading = null;      // 0..360 (0 = Norden)
+let qiblaBearing = null;       // 0..360
+
+function toRad(deg){ return deg * Math.PI / 180; }
+function toDeg(rad){ return rad * 180 / Math.PI; }
+
+function normalize360(x){
+  let v = x % 360;
+  if (v < 0) v += 360;
+  return v;
+}
+
+// Initial bearing von Ort -> Kaaba
+function computeBearing(lat1, lon1, lat2, lon2){
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δλ = toRad(lon2 - lon1);
+
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+  const θ = Math.atan2(y, x);
+  return normalize360(toDeg(θ));
+}
+
+function updateQiblaBearing(){
+  if (!PLACE) {
+    qiblaBearing = null;
+    qiblaBearingEl.textContent = "—";
+    qiblaStatusEl.textContent = "Ort auswählen, dann Kompass aktivieren.";
+    return;
+  }
+  qiblaBearing = computeBearing(PLACE.lat, PLACE.lon, KAABA.lat, KAABA.lon);
+  qiblaBearingEl.textContent = `${qiblaBearing.toFixed(1)}°`;
+  qiblaStatusEl.textContent = `Ort: ${PLACE.name}`;
+}
+
+function updateNeedle(){
+  updateQiblaBearing();
+
+  if (deviceHeading == null || qiblaBearing == null) {
+    deviceHeadingEl.textContent = deviceHeading == null ? "—" : `${deviceHeading.toFixed(1)}°`;
+    needleRotationEl.textContent = "—";
+    qiblaNeedleEl.style.transform = "rotate(0deg)";
+    return;
+  }
+
+  // Nadel zeigt Richtung Qibla relativ zur aktuellen Ausrichtung
+  const rot = normalize360(qiblaBearing - deviceHeading);
+  deviceHeadingEl.textContent = `${deviceHeading.toFixed(1)}°`;
+  needleRotationEl.textContent = `${rot.toFixed(1)}°`;
+  qiblaNeedleEl.style.transform = `rotate(${rot}deg)`;
+}
+
+function handleOrientation(e){
+  // iOS Safari liefert oft webkitCompassHeading (0..360, 0 = Norden)
+  if (typeof e.webkitCompassHeading === "number") {
+    deviceHeading = e.webkitCompassHeading;
+  } else if (typeof e.alpha === "number") {
+    // generischer Fallback: alpha ist oft "Rotation" -> grob umrechnen
+    deviceHeading = normalize360(360 - e.alpha);
+  } else {
+    deviceHeading = null;
+  }
+  updateNeedle();
+}
+
+async function enableCompass(){
+  if (!PLACE) {
+    qiblaStatusEl.textContent = "Bitte erst einen Ort auswählen.";
+    return;
+  }
+
+  try {
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      // iOS: Permission nötig
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== "granted") {
+        qiblaStatusEl.textContent = "Keine Erlaubnis für Bewegungssensoren.";
+        return;
+      }
+    }
+
+    window.addEventListener("deviceorientation", handleOrientation, true);
+    qiblaStatusEl.textContent = "Kompass aktiv. Bewege das iPhone zur Kalibrierung.";
+    updateNeedle();
+  } catch {
+    qiblaStatusEl.textContent = "Kompass konnte nicht aktiviert werden.";
+  }
+}
+
+qiblaEnableBtn.addEventListener("click", enableCompass);
 function pad2(n){ return String(n).padStart(2, "0"); }
 function formatTime(date){ return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`; }
 
@@ -657,8 +840,10 @@ if ("serviceWorker" in navigator) {
 
 /* Start */
 locEl.textContent = PLACE.name;
-render();
-setInterval(render, 30 * 60 * 1000);
+setInterval(() => {
+  render();
+  updateNeedle();
+}, 30 * 60 * 1000);
 </script>
 </body>
 </html>
