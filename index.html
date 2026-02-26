@@ -508,7 +508,7 @@ function render(){
 
   // 5 Karten
   data.items.forEach(item => {
-    const isNext = (nextInfo.next.key === item.key) && !nextInfo.isTomorrow;
+    const isNext = (nextInfo.next.key === item.key);
     const isCurrent = currentItem && currentItem.key === item.key;
 
     const card = document.createElement("div");
