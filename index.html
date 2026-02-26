@@ -3,69 +3,526 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Notizen</title>
+  <title>Gebetszeiten</title>
 
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#111111" />
+  <meta name="theme-color" content="#0b0b0c" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,system-ui,Segoe UI,Roboto,Arial;
-      margin:0;background:#0b0b0c;color:#fff}
-    header{padding:16px 16px 8px}
-    h1{margin:0;font-size:22px}
-    .wrap{padding:16px;display:grid;gap:12px}
-    textarea{width:100%;min-height:180px;border-radius:16px;border:1px solid #2a2a2a;
-      padding:12px;background:#141416;color:#fff;font-size:16px;line-height:1.4}
-    button{border:0;border-radius:14px;padding:12px 14px;font-size:16px;font-weight:600}
-    .row{display:flex;gap:10px}
-    .primary{background:#ffffff;color:#0b0b0c;flex:1}
-    .ghost{background:#1f1f22;color:#fff}
-    .meta{opacity:.75;font-size:13px}
+    :root{
+      --bg:#0b0b0c;
+      --card:#1b1b1e;
+      --card2:#141416;
+      --line:#2a2a2e;
+      --text:#ffffff;
+      --muted:rgba(255,255,255,.7);
+      --next:#112941; /* blau wie im Screenshot */
+      --nextLine:#1e4d76;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,system-ui,Segoe UI,Roboto,Arial;
+      margin:0;background:var(--bg);color:var(--text)
+    }
+    header{padding:18px 16px 10px}
+    h1{margin:0;font-size:26px;letter-spacing:.2px}
+    .meta{margin-top:10px;display:grid;gap:6px;color:var(--muted);font-size:14px}
+    .meta .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .pill{
+      border:1px solid var(--line);
+      border-radius:999px;padding:6px 10px;
+      background:#0f0f11;color:var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .wrap{padding:12px 16px 18px;display:grid;gap:12px}
+    .card{
+      background:var(--card2);border:1px solid var(--line);
+      border-radius:18px;padding:14px 14px;
+    }
+
+    .item{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px;border-radius:18px;border:1px solid var(--line);
+      background:var(--card);
+    }
+    .item.next{
+      background:var(--next);
+      border-color:var(--nextLine);
+    }
+    .left{display:flex;gap:12px;align-items:flex-start}
+    .icon{
+      width:36px;height:36px;border-radius:12px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.08);
+      font-size:18px;
+      flex:0 0 auto;
+    }
+    .txt{display:grid;gap:4px}
+    .nameRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .name{font-size:18px;font-weight:800}
+    .tag{
+      font-size:12px;font-weight:800;letter-spacing:.08em;
+      padding:4px 8px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      color:rgba(255,255,255,.9);
+    }
+    .desc{font-size:13px;color:rgba(255,255,255,.72);line-height:1.25}
+    .time{
+      font-size:22px;font-weight:900;
+      font-variant-numeric: tabular-nums;
+      letter-spacing:.2px;
+    }
+    .countdown{
+      margin-top:10px;
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+    }
+    .countdown .label{color:var(--muted);font-size:13px}
+    .countdown .value{
+      font-size:16px;font-weight:900;
+      font-variant-numeric: tabular-nums;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid var(--line);
+      background:#0f0f11;
+    }
+
+    .footerCard{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between
+    }
+    button{
+      border:0;border-radius:14px;padding:12px 14px;
+      font-size:15px;font-weight:800;
+    }
+    .btnA{background:#ffffff;color:#0b0b0c}
+    .btnB{background:#1f1f22;color:#fff;border:1px solid var(--line)}
+    .hint{margin-top:8px;color:var(--muted);font-size:12.5px;line-height:1.3}
+    a{color:#fff}
   </style>
 </head>
+
 <body>
   <header>
-    <h1>Notizen</h1>
-    <div class="meta" id="status">Wird geladen…</div>
+    <h1>Gebetszeiten</h1>
+    <div class="meta">
+      <div class="row">
+        <span id="greg">—</span>
+        <span class="pill" id="hijri">—</span>
+      </div>
+      <div class="row">
+        <span class="pill" id="loc">Bremen-Vegesack</span>
+        <span class="pill" id="status">Aktualisieren…</span>
+      </div>
+    </div>
   </header>
 
+  <div class="wrap" id="list"></div>
+
   <div class="wrap">
-    <textarea id="note" placeholder="Schreib was rein…"></textarea>
-    <div class="row">
-      <button class="primary" id="save">Speichern</button>
-      <button class="ghost" id="clear">Leeren</button>
+    <div class="card">
+      <div class="footerCard">
+        <button class="btnA" id="refresh">Jetzt aktualisieren</button>
+        <button class="btnB" id="installHint">Zum Home-Bildschirm</button>
+      </div>
+      <div class="hint">
+        Diese App berechnet keine „Standard-Gebetszeitenmethoden“, sondern nutzt nur deine Definitionen:
+        Fajr (−12°), Dhuhr (Solar Noon + 15 Min), Asr (Shafi’i), Maghrib (Sonnenuntergang), Isha (−18°).
+      </div>
     </div>
   </div>
 
-  <script>
-    const key = "pwa_note_v1";
-    const note = document.getElementById("note");
-    const status = document.getElementById("status");
+<script>
+/* =========================
+   Einstellungen (fixer Ort)
+   ========================= */
+const PLACE = {
+  name: "Bremen-Vegesack",
+  // grob Bremen-Vegesack:
+  lat: 53.173,   // Breitengrad
+  lon: 8.623     // Längengrad
+};
 
-    function updateStatus(text){
-      status.textContent = text;
+// Definitionen
+const OFFSETS_MINUTES = { dhuhr: 15 };
+
+/* =========================
+   Mini "SunCalc" (MIT) - kompakt
+   Quelle: Idee wie SunCalc, hier eingebaut, damit es auf GitHub Pages ohne extra Dateien läuft.
+   ========================= */
+const Sun = (() => {
+  const rad = Math.PI / 180;
+  const dayMs = 86400000;
+  const J1970 = 2440588;
+  const J2000 = 2451545;
+
+  function toJulian(date){ return date.valueOf() / dayMs - 0.5 + J1970; }
+  function fromJulian(j){ return new Date((j + 0.5 - J1970) * dayMs); }
+  function toDays(date){ return toJulian(date) - J2000; }
+
+  function rightAscension(l, b){
+    const e = rad * 23.4397;
+    return Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l));
+  }
+  function declination(l, b){
+    const e = rad * 23.4397;
+    return Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l));
+  }
+  function azimuth(H, phi, dec){
+    return Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
+  }
+  function altitude(H, phi, dec){
+    return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
+  }
+  function siderealTime(d, lw){
+    return rad * (280.16 + 360.9856235 * d) - lw;
+  }
+
+  function solarMeanAnomaly(d){
+    return rad * (357.5291 + 0.98560028 * d);
+  }
+  function eclipticLongitude(M){
+    const C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+    const P = rad * 102.9372;
+    return M + C + P + Math.PI;
+  }
+  function sunCoords(d){
+    const M = solarMeanAnomaly(d);
+    const L = eclipticLongitude(M);
+    return {
+      dec: declination(L, 0),
+      ra: rightAscension(L, 0),
+      M, L
+    };
+  }
+
+  // Position (altitude/azimuth) zu Zeitpunkt
+  function getPosition(date, lat, lon){
+    const lw = rad * -lon;
+    const phi = rad * lat;
+    const d = toDays(date);
+
+    const c = sunCoords(d);
+    const H = siderealTime(d, lw) - c.ra;
+
+    return {
+      azimuth: azimuth(H, phi, c.dec),
+      altitude: altitude(H, phi, c.dec),
+      declination: c.dec
+    };
+  }
+
+  function julianCycle(d, lw){ return Math.round(d - 0.0009 - lw / (2 * Math.PI)); }
+  function approxTransit(Ht, lw, n){ return 0.0009 + (Ht + lw) / (2 * Math.PI) + n; }
+  function solarTransitJ(ds, M, L){ return J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L); }
+  function hourAngle(h, phi, d){
+    return Math.acos((Math.sin(h) - Math.sin(phi) * Math.sin(d)) / (Math.cos(phi) * Math.cos(d)));
+  }
+
+  // Zeiten für bestimmte Sonnenhöhe h (rad) (rise/set)
+  function getSetJ(h, lw, phi, dec, n, M, L){
+    const w = hourAngle(h, phi, dec);
+    const a = approxTransit(w, lw, n);
+    return solarTransitJ(a, M, L);
+  }
+
+  // liefert: solarNoon, sunrise, sunset, nauticalDawn, nauticalDusk, night (astronomische Dämmerung Ende), nightEnd (morgens)
+  function getTimes(date, lat, lon){
+    const lw = rad * -lon;
+    const phi = rad * lat;
+    const d = toDays(date);
+
+    const n = julianCycle(d, lw);
+    const ds = approxTransit(0, lw, n);
+
+    const c = sunCoords(ds);
+    const Jnoon = solarTransitJ(ds, c.M, c.L);
+
+    const hSunrise = rad * (-0.833); // Standard-Refraktion für Sonnenauf/untergang
+    const Jset = getSetJ(hSunrise, lw, phi, c.dec, n, c.M, c.L);
+    const Jrise = Jnoon - (Jset - Jnoon);
+
+    const hNautical = rad * (-12);
+    const JnautSet = getSetJ(hNautical, lw, phi, c.dec, n, c.M, c.L);
+    const JnautRise = Jnoon - (JnautSet - Jnoon);
+
+    const hAstro = rad * (-18);
+    const Jnight = getSetJ(hAstro, lw, phi, c.dec, n, c.M, c.L);
+    const JnightEnd = Jnoon - (Jnight - Jnoon);
+
+    return {
+      solarNoon: fromJulian(Jnoon),
+      sunrise: fromJulian(Jrise),
+      sunset: fromJulian(Jset),
+      nauticalDawn: fromJulian(JnautRise),
+      nauticalDusk: fromJulian(JnautSet),
+      night: fromJulian(Jnight),        // abends -18°
+      nightEnd: fromJulian(JnightEnd)   // morgens -18°
+    };
+  }
+
+  return { getTimes, getPosition };
+})();
+
+/* =========================
+   App-Logik
+   ========================= */
+const listEl = document.getElementById("list");
+const gregEl = document.getElementById("greg");
+const hijriEl = document.getElementById("hijri");
+const statusEl = document.getElementById("status");
+const locEl = document.getElementById("loc");
+const refreshBtn = document.getElementById("refresh");
+const installHintBtn = document.getElementById("installHint");
+
+locEl.textContent = PLACE.name;
+
+function pad2(n){ return String(n).padStart(2, "0"); }
+
+function formatTime(date){
+  // in Geräte-Zeitzone
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+function formatGregorian(date){
+  // z.B. "Mi., 26.02.2026"
+  try {
+    return new Intl.DateTimeFormat("de-DE", { weekday:"short", year:"numeric", month:"2-digit", day:"2-digit" }).format(date);
+  } catch {
+    return `${pad2(date.getDate())}.${pad2(date.getMonth()+1)}.${date.getFullYear()}`;
+  }
+}
+
+function formatHijri(date){
+  // iOS Safari kann oft islamic-umalqura. Fallback, falls nicht verfügbar.
+  const candidates = [
+    "de-DE-u-ca-islamic-umalqura",
+    "de-DE-u-ca-islamic",
+    "en-US-u-ca-islamic-umalqura",
+    "en-US-u-ca-islamic"
+  ];
+  for (const loc of candidates){
+    try {
+      const s = new Intl.DateTimeFormat(loc, { day:"2-digit", month:"long", year:"numeric" }).format(date);
+      if (s && s !== "Invalid Date") return s;
+    } catch {}
+  }
+  return "Hijri-Datum nicht verfügbar";
+}
+
+function addMinutes(date, minutes){
+  return new Date(date.getTime() + minutes * 60000);
+}
+
+// Asr Shafi’i: Schattenfaktor 1.
+// Wir berechnen Zielhöhe aus Solar-Noon-Höhe und suchen dann Zeit zwischen solarNoon und sunset.
+function computeAsrShafii(dateBase, lat, lon, solarNoon, sunset){
+  const posNoon = Sun.getPosition(solarNoon, lat, lon);
+  const altNoon = posNoon.altitude; // rad
+
+  // tan(alt_asr) = 1 / (1 + 1/tan(altNoon))
+  const tanNoon = Math.tan(altNoon);
+  // Sicherheits-Checks:
+  if (!isFinite(tanNoon) || tanNoon <= 0) return null;
+
+  const tanAsr = 1 / (1 + (1 / tanNoon));
+  const altAsr = Math.atan(tanAsr);
+
+  // Binary search nach Zeitpunkt, wo altitude == altAsr (nach Mittag)
+  let lo = new Date(solarNoon.getTime());
+  let hi = new Date(sunset.getTime());
+
+  // falls Sunset vor Noon (extrem unwahrscheinlich hier), abbrechen
+  if (hi <= lo) return null;
+
+  // 40 Iterationen reicht locker auf Minute
+  for (let i = 0; i < 40; i++){
+    const mid = new Date((lo.getTime() + hi.getTime()) / 2);
+    const altMid = Sun.getPosition(mid, lat, lon).altitude;
+    if (altMid > altAsr){
+      // noch zu hoch -> später gehen
+      lo = mid;
+    } else {
+      // schon zu tief -> früher
+      hi = mid;
+    }
+  }
+  return hi;
+}
+
+function getPrayerTimesForToday(){
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // lokale Mitternacht
+
+  const t = Sun.getTimes(base, PLACE.lat, PLACE.lon);
+
+  const fajr = t.nauticalDawn;                 // -12° morgens
+  const dhuhr = addMinutes(t.solarNoon, OFFSETS_MINUTES.dhuhr); // noon + 15
+  const asr = computeAsrShafii(base, PLACE.lat, PLACE.lon, t.solarNoon, t.sunset);
+  const maghrib = t.sunset;                    // Sonnenuntergang
+  const isha = t.night;                        // -18° abends
+
+  return {
+    date: base,
+    items: [
+      { key:"fajr", name:"Fajr",    desc:"Nautische Dämmerung", icon:"🌙", time: fajr },
+      { key:"dhuhr",name:"Dhuhr",   desc:"15 Minuten nach Sonnenhöchststand", icon:"☀️", time: dhuhr },
+      { key:"asr",  name:"Asr",     desc:"Shafi’i (Schattenfaktor 1)", icon:"🌤️", time: asr },
+      { key:"maghrib", name:"Maghrib", desc:"Sonnenuntergang", icon:"🌅", time: maghrib },
+      { key:"isha", name:"Isha",    desc:"Astronomische Dämmerung (−18°)", icon:"🌌", time: isha }
+    ]
+  };
+}
+
+function findNext(items){
+  const now = new Date();
+  const todayUpcoming = items
+    .filter(x => x.time instanceof Date && x.time.getTime() >= now.getTime())
+    .sort((a,b)=>a.time-b.time)[0];
+
+  if (todayUpcoming) return { next: todayUpcoming, target: todayUpcoming.time, isTomorrow:false };
+
+  // Wenn heute alles vorbei -> nächstes ist Fajr von morgen
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const t2 = Sun.getTimes(tomorrow, PLACE.lat, PLACE.lon);
+  const fajrTomorrow = t2.nauticalDawn;
+  const next = { key:"fajr", name:"Fajr", desc:"Nautische Dämmerung", icon:"🌙", time: fajrTomorrow };
+  return { next, target: fajrTomorrow, isTomorrow:true };
+}
+
+let countdownTimer = null;
+function startCountdown(targetDate, labelEl, valueEl){
+  if (countdownTimer) clearInterval(countdownTimer);
+
+  function tick(){
+    const now = new Date();
+    let diff = targetDate.getTime() - now.getTime();
+    if (diff < 0) diff = 0;
+
+    const total = Math.floor(diff / 1000);
+    const hh = Math.floor(total / 3600);
+    const mm = Math.floor((total % 3600) / 60);
+    const ss = total % 60;
+
+    valueEl.textContent = `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+  }
+  tick();
+  countdownTimer = setInterval(tick, 1000);
+}
+
+function render(){
+  statusEl.textContent = "Aktualisiert";
+  const data = getPrayerTimesForToday();
+
+  gregEl.textContent = formatGregorian(new Date());
+  hijriEl.textContent = formatHijri(new Date());
+
+  const nextInfo = findNext(data.items);
+
+  listEl.innerHTML = "";
+
+  data.items.forEach(item => {
+    const isNext = nextInfo.next.key === item.key && !nextInfo.isTomorrow;
+
+    const card = document.createElement("div");
+    card.className = "item" + (isNext ? " next" : "");
+
+    const left = document.createElement("div");
+    left.className = "left";
+
+    const icon = document.createElement("div");
+    icon.className = "icon";
+    icon.textContent = item.icon;
+
+    const txt = document.createElement("div");
+    txt.className = "txt";
+
+    const nameRow = document.createElement("div");
+    nameRow.className = "nameRow";
+
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = item.name;
+
+    nameRow.appendChild(name);
+
+    if (isNext) {
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = "NÄCHSTES";
+      nameRow.appendChild(tag);
     }
 
-    const saved = localStorage.getItem(key);
-    if (saved !== null) note.value = saved;
-    updateStatus("Bereit • lokal gespeichert");
+    const desc = document.createElement("div");
+    desc.className = "desc";
+    desc.textContent = item.desc;
 
-    document.getElementById("save").onclick = () => {
-      localStorage.setItem(key, note.value);
-      updateStatus("Gespeichert • " + new Date().toLocaleString());
-    };
+    txt.appendChild(nameRow);
+    txt.appendChild(desc);
 
-    document.getElementById("clear").onclick = () => {
-      note.value = "";
-      localStorage.removeItem(key);
-      updateStatus("Gelöscht • lokal");
-    };
+    left.appendChild(icon);
+    left.appendChild(txt);
 
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(()=>{});
-    }
-  </script>
+    const right = document.createElement("div");
+    right.className = "time";
+    right.textContent = (item.time instanceof Date) ? formatTime(item.time) : "—";
+
+    card.appendChild(left);
+    card.appendChild(right);
+
+    listEl.appendChild(card);
+  });
+
+  // Countdown-Karte oben (als erste Karte)
+  const top = document.createElement("div");
+  top.className = "card";
+  const cd = document.createElement("div");
+  cd.className = "countdown";
+
+  const left = document.createElement("div");
+  const label = document.createElement("div");
+  label.className = "label";
+  label.textContent = nextInfo.isTomorrow ? "Nächstes (morgen)" : "Nächstes";
+  const strong = document.createElement("div");
+  strong.style.fontWeight = "900";
+  strong.style.fontSize = "16px";
+  strong.textContent = `${nextInfo.next.name} um ${formatTime(nextInfo.target)}`;
+
+  left.appendChild(label);
+  left.appendChild(strong);
+
+  const val = document.createElement("div");
+  val.className = "value";
+  val.textContent = "—";
+
+  cd.appendChild(left);
+  cd.appendChild(val);
+  top.appendChild(cd);
+
+  // ganz oben einfügen
+  listEl.prepend(top);
+
+  startCountdown(nextInfo.target, label, val);
+}
+
+refreshBtn.onclick = () => {
+  statusEl.textContent = "Aktualisieren…";
+  // kurzer Delay für Gefühl
+  setTimeout(render, 50);
+};
+
+installHintBtn.onclick = () => {
+  alert("In Safari: Teilen → „Zum Home-Bildschirm“ → Hinzufügen.");
+};
+
+// Service Worker (offline Cache für App-Dateien)
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch(()=>{});
+}
+
+// Initial + regelmäßige Aktualisierung (alle 30 Minuten)
+render();
+setInterval(render, 30 * 60 * 1000);
+</script>
 </body>
 </html>
