@@ -452,6 +452,31 @@ function updateNeedle(){
 }
 
 function handleOrientation(e){
+  let heading = null;
+
+  // iOS: bester Wert (0 = Norden, im Uhrzeigersinn)
+  if (typeof e.webkitCompassHeading === "number") {
+    heading = e.webkitCompassHeading;
+  } else if (typeof e.alpha === "number") {
+    // Fallback: alpha ist oft gegen den Uhrzeigersinn -> umdrehen
+    heading = 360 - e.alpha;
+  }
+
+  if (heading == null) {
+    deviceHeading = null;
+    updateNeedle();
+    return;
+  }
+
+  // Bildschirmrotation berücksichtigen (Portrait/Querformat)
+  const angle =
+    (screen.orientation && typeof screen.orientation.angle === "number")
+      ? screen.orientation.angle
+      : (typeof window.orientation === "number" ? window.orientation : 0);
+
+  deviceHeading = normalize360(heading + angle);
+  updateNeedle();
+}
   // iOS Safari liefert oft webkitCompassHeading (0..360, 0 = Norden)
   if (typeof e.webkitCompassHeading === "number") {
     deviceHeading = e.webkitCompassHeading;
