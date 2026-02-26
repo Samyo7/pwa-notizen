@@ -20,6 +20,8 @@
       --muted:rgba(255,255,255,.7);
       --next:#112941; /* blau */
       --nextLine:#1e4d76;
+      --current:#1d2b17; /* grün */
+      --currentLine:#3b6a2a;
     }
     *{box-sizing:border-box}
     body{
@@ -28,7 +30,7 @@
     }
     header{padding:18px 16px 10px}
     h1{margin:0;font-size:26px;letter-spacing:.2px}
-    .meta{margin-top:10px;display:grid;gap:6px;color:var(--muted);font-size:14px}
+    .meta{margin-top:10px;display:grid;gap:10px;color:var(--muted);font-size:14px}
     .meta .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .pill{
       border:1px solid var(--line);
@@ -52,10 +54,9 @@
       background:var(--next);
       border-color:var(--nextLine);
     }
-    /* AKTUELL-Markierung (grün) */
     .item.current{
-      background:#1d2b17;
-      border-color:#3b6a2a;
+      background:var(--current);
+      border-color:var(--currentLine);
     }
 
     .left{display:flex;gap:12px;align-items:flex-start}
@@ -81,6 +82,7 @@
       font-variant-numeric: tabular-nums;
       letter-spacing:.2px;
     }
+
     .countdown{
       margin-top:10px;
       display:flex;justify-content:space-between;align-items:center;gap:10px;
@@ -104,20 +106,52 @@
     .btnA{background:#ffffff;color:#0b0b0c}
     .btnB{background:#1f1f22;color:#fff;border:1px solid var(--line)}
     .hint{margin-top:8px;color:var(--muted);font-size:12.5px;line-height:1.3}
+
+    /* Ort-Suche */
+    .searchWrap{display:grid;gap:8px;width:100%}
+    .searchInput{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0f0f11;
+      color:var(--text);
+      font-size:15px;
+      outline:none;
+    }
+    .suggestions{display:grid;gap:8px}
+    .suggestion{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:var(--card2);
+      cursor:pointer;
+      color:rgba(255,255,255,.92);
+      user-select:none;
+    }
+    .suggestion:active{transform:scale(.99)}
+    .suggestionSmall{font-size:12.5px;color:var(--muted);margin-top:4px}
   </style>
 </head>
 
 <body>
   <header>
     <h1>Gebetszeiten</h1>
+
     <div class="meta">
       <div class="row">
         <span id="greg">—</span>
         <span class="pill" id="hijri">—</span>
       </div>
+
       <div class="row">
         <span class="pill" id="loc">Bremen-Vegesack</span>
         <span class="pill" id="status">Aktualisieren…</span>
+      </div>
+
+      <div class="searchWrap">
+        <input id="cityInput" class="searchInput" type="text" placeholder="Ort suchen (z.B. Hamburg) …">
+        <div id="suggestions" class="suggestions"></div>
       </div>
     </div>
   </header>
@@ -131,21 +165,27 @@
         <button class="btnB" id="installHint">Zum Home-Bildschirm</button>
       </div>
       <div class="hint">
-        Deine Definitionen:
-        Fajr (−12°), Dhuhr (Solar Noon + 15 Min), Asr (Shafi’i), Maghrib (Sonnenuntergang), Isha (−18°).
+        Regeln: Fajr (−12° nautische Dämmerung), Dhuhr (Solar Noon + 15 Minuten), Asr (Shafi’i),
+        Maghrib (Sonnenuntergang), Isha (−18° astronomische Dämmerung).
       </div>
     </div>
   </div>
 
 <script>
 /* =========================
-   Einstellungen (fixer Ort)
+   Ort (standard) + Speicherung
    ========================= */
-const PLACE = {
+let PLACE = {
   name: "Bremen-Vegesack",
   lat: 53.173,
   lon: 8.623
 };
+
+// gespeicherten Ort laden (wenn vorhanden)
+try {
+  const savedPlace = localStorage.getItem("selected_place_v1");
+  if (savedPlace) PLACE = JSON.parse(savedPlace);
+} catch {}
 
 const OFFSETS_MINUTES = { dhuhr: 15 };
 
@@ -253,7 +293,7 @@ const Sun = (() => {
 })();
 
 /* =========================
-   App-Logik
+   UI Elemente
    ========================= */
 const listEl = document.getElementById("list");
 const gregEl = document.getElementById("greg");
@@ -263,8 +303,14 @@ const locEl = document.getElementById("loc");
 const refreshBtn = document.getElementById("refresh");
 const installHintBtn = document.getElementById("installHint");
 
+const cityInput = document.getElementById("cityInput");
+const suggestionsEl = document.getElementById("suggestions");
+
 locEl.textContent = PLACE.name;
 
+/* =========================
+   Helfer
+   ========================= */
 function pad2(n){ return String(n).padStart(2, "0"); }
 function formatTime(date){ return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`; }
 
@@ -298,7 +344,9 @@ function addMinutes(date, minutes){
   return new Date(date.getTime() + minutes * 60000);
 }
 
-// Asr Shafi’i (Schattenfaktor 1)
+/* =========================
+   Asr Shafi’i
+   ========================= */
 function computeAsrShafii(lat, lon, solarNoon, sunset){
   const posNoon = Sun.getPosition(solarNoon, lat, lon);
   const altNoon = posNoon.altitude;
@@ -306,6 +354,7 @@ function computeAsrShafii(lat, lon, solarNoon, sunset){
   const tanNoon = Math.tan(altNoon);
   if (!isFinite(tanNoon) || tanNoon <= 0) return null;
 
+  // Shafi’i: shadow factor 1 -> tan(alt_asr) = 1 / (1 + 1/tan(altNoon))
   const tanAsr = 1 / (1 + (1 / tanNoon));
   const altAsr = Math.atan(tanAsr);
 
@@ -322,6 +371,9 @@ function computeAsrShafii(lat, lon, solarNoon, sunset){
   return hi;
 }
 
+/* =========================
+   Gebetszeiten heute
+   ========================= */
 function getPrayerTimesForToday(){
   const now = new Date();
 
@@ -341,7 +393,7 @@ function getPrayerTimesForToday(){
     items: [
       { key:"fajr",    name:"Fajr",    desc:"Nautische Dämmerung", icon:"🌙", time: fajr },
       { key:"dhuhr",   name:"Dhuhr",   desc:"15 Minuten nach Sonnenhöchststand", icon:"☀️", time: dhuhr },
-      { key:"asr", name:"Asr", desc:"Shafi’i", icon:"🌤️", time: asr },
+      { key:"asr",     name:"Asr",     desc:"Shafi’i", icon:"🌤️", time: asr },
       { key:"maghrib", name:"Maghrib", desc:"Sonnenuntergang", icon:"🌅", time: maghrib },
       { key:"isha",    name:"Isha",    desc:"Astronomische Dämmerung", icon:"🌌", time: isha }
     ]
@@ -365,18 +417,14 @@ function findNext(items){
   return { next, target: fajrTomorrow, isTomorrow:true };
 }
 
-// AKTUELL: letztes Gebet, dessen Zeit begonnen hat, bis zum nächsten
 function findCurrent(items){
   const now = new Date();
-
   const sorted = items
     .filter(x => x.time instanceof Date)
     .slice()
     .sort((a,b)=>a.time-b.time);
 
   if (sorted.length === 0) return null;
-
-  // Wenn jetzt vor dem ersten Gebet liegt -> nichts markieren
   if (now.getTime() < sorted[0].time.getTime()) return null;
 
   let current = sorted[0];
@@ -386,6 +434,9 @@ function findCurrent(items){
   return current;
 }
 
+/* =========================
+   Countdown
+   ========================= */
 let countdownTimer = null;
 function startCountdown(targetDate, valueEl){
   if (countdownTimer) clearInterval(countdownTimer);
@@ -406,6 +457,9 @@ function startCountdown(targetDate, valueEl){
   countdownTimer = setInterval(tick, 1000);
 }
 
+/* =========================
+   Render
+   ========================= */
 function render(){
   statusEl.textContent = "Aktualisiert";
 
@@ -452,7 +506,7 @@ function render(){
 
   startCountdown(nextInfo.target, val);
 
-  // 5 Gebetskarten
+  // 5 Karten
   data.items.forEach(item => {
     const isNext = (nextInfo.next.key === item.key) && !nextInfo.isTomorrow;
     const isCurrent = currentItem && currentItem.key === item.key;
@@ -514,21 +568,82 @@ function render(){
   });
 }
 
-document.getElementById("refresh").onclick = () => {
+/* =========================
+   Ort-Suche (Autocomplete)
+   ========================= */
+let searchTimeout = null;
+
+function clearSuggestions(){
+  suggestionsEl.innerHTML = "";
+}
+
+function setPlace(name, lat, lon){
+  PLACE = { name, lat, lon };
+  locEl.textContent = PLACE.name;
+  try { localStorage.setItem("selected_place_v1", JSON.stringify(PLACE)); } catch {}
+  clearSuggestions();
+  cityInput.value = "";
+  render();
+}
+
+cityInput.addEventListener("input", () => {
+  const value = cityInput.value.trim();
+  if (value.length < 2) {
+    clearSuggestions();
+    return;
+  }
+
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(value)}&count=6&language=de&format=json`)
+      .then(res => res.json())
+      .then(data => {
+        clearSuggestions();
+        if (!data || !data.results || !Array.isArray(data.results)) return;
+
+        data.results.forEach(place => {
+          const div = document.createElement("div");
+          div.className = "suggestion";
+
+          const title = document.createElement("div");
+          title.textContent = `${place.name}${place.admin1 ? ", " + place.admin1 : ""}, ${place.country}`;
+
+          const small = document.createElement("div");
+          small.className = "suggestionSmall";
+          small.textContent = `Breite ${place.latitude.toFixed(3)} • Länge ${place.longitude.toFixed(3)}`;
+
+          div.appendChild(title);
+          div.appendChild(small);
+
+          div.onclick = () => {
+            setPlace(`${place.name}${place.admin1 ? ", " + place.admin1 : ""}, ${place.country}`, place.latitude, place.longitude);
+          };
+
+          suggestionsEl.appendChild(div);
+        });
+      })
+      .catch(() => {});
+  }, 250);
+});
+
+/* =========================
+   Buttons + Offline Cache
+   ========================= */
+refreshBtn.onclick = () => {
   statusEl.textContent = "Aktualisieren…";
   setTimeout(render, 50);
 };
 
-document.getElementById("installHint").onclick = () => {
+installHintBtn.onclick = () => {
   alert("Auf dem iPhone in Safari: Teilen → „Zum Home-Bildschirm“ → Hinzufügen.");
 };
 
-// Offline Cache
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(()=>{});
 }
 
-// Start + regelmäßiges Update
+/* Start */
+locEl.textContent = PLACE.name;
 render();
 setInterval(render, 30 * 60 * 1000);
 </script>
