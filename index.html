@@ -302,7 +302,7 @@ const installHintBtn = document.getElementById("installHint");
 const cityInput = document.getElementById("cityInput");
 const suggestionsEl = document.getElementById("suggestions");
 
-locEl.textContent = PLACE.name;
+locEl.textContent = PLACE ? PLACE.name : "Kein Ort gewählt";
 
 /* =========================
    Helfer
@@ -457,6 +457,23 @@ function startCountdown(targetDate, valueEl){
    Render
    ========================= */
 function render(){
+  if (!PLACE) {
+  statusEl.textContent = "Ort auswählen";
+  gregEl.textContent = formatGregorian(new Date());
+  hijriEl.textContent = formatHijri(new Date());
+
+  listEl.innerHTML = `
+    <div class="card">
+      <div style="font-weight:800;font-size:16px;margin-bottom:8px">
+        Bitte Ort auswählen
+      </div>
+      <div style="color:rgba(255,255,255,.7);font-size:14px">
+        Suche oben nach einer Stadt, um Gebetszeiten anzuzeigen.
+      </div>
+    </div>
+  `;
+  return;
+}
   statusEl.textContent = "Aktualisiert";
 
   const data = getPrayerTimesForToday();
