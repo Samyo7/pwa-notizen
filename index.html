@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notizen</title>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#111111" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,system-ui,Segoe UI,Roboto,Arial;
+      margin:0;background:#0b0b0c;color:#fff}
+    header{padding:16px 16px 8px}
+    h1{margin:0;font-size:22px}
+    .wrap{padding:16px;display:grid;gap:12px}
+    textarea{width:100%;min-height:180px;border-radius:16px;border:1px solid #2a2a2a;
+      padding:12px;background:#141416;color:#fff;font-size:16px;line-height:1.4}
+    button{border:0;border-radius:14px;padding:12px 14px;font-size:16px;font-weight:600}
+    .row{display:flex;gap:10px}
+    .primary{background:#ffffff;color:#0b0b0c;flex:1}
+    .ghost{background:#1f1f22;color:#fff}
+    .meta{opacity:.75;font-size:13px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Notizen</h1>
+    <div class="meta" id="status">Wird geladen…</div>
+  </header>
+
+  <div class="wrap">
+    <textarea id="note" placeholder="Schreib was rein…"></textarea>
+    <div class="row">
+      <button class="primary" id="save">Speichern</button>
+      <button class="ghost" id="clear">Leeren</button>
+    </div>
+  </div>
+
+  <script>
+    const key = "pwa_note_v1";
+    const note = document.getElementById("note");
+    const status = document.getElementById("status");
+
+    function updateStatus(text){
+      status.textContent = text;
+    }
+
+    const saved = localStorage.getItem(key);
+    if (saved !== null) note.value = saved;
+    updateStatus("Bereit • lokal gespeichert");
+
+    document.getElementById("save").onclick = () => {
+      localStorage.setItem(key, note.value);
+      updateStatus("Gespeichert • " + new Date().toLocaleString());
+    };
+
+    document.getElementById("clear").onclick = () => {
+      note.value = "";
+      localStorage.removeItem(key);
+      updateStatus("Gelöscht • lokal");
+    };
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    }
+  </script>
+</body>
+</html>
