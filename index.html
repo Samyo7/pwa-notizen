@@ -352,7 +352,7 @@ function computeAsrShafii(dateBase, lat, lon, solarNoon, sunset){
 
 function getPrayerTimesForToday(){
   const now = new Date();
-  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // lokale Mitternacht
+  const base = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
   const t = Sun.getTimes(base, PLACE.lat, PLACE.lon);
 
@@ -383,7 +383,7 @@ function findNext(items){
   if (todayUpcoming) return { next: todayUpcoming, target: todayUpcoming.time, isTomorrow:false };
 
   // Wenn heute alles vorbei -> nächstes ist Fajr von morgen
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const tomorrow = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + 1));
   const t2 = Sun.getTimes(tomorrow, PLACE.lat, PLACE.lon);
   const fajrTomorrow = t2.nauticalDawn;
   const next = { key:"fajr", name:"Fajr", desc:"Nautische Dämmerung", icon:"🌙", time: fajrTomorrow };
