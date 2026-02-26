@@ -506,7 +506,8 @@ async function enableCompass(){
       }
     }
 
-    window.addEventListener("deviceorientation", handleOrientation, true);
+    window.addEventListener("deviceorientationabsolute", handleOrientation, true);
+window.addEventListener("deviceorientation", handleOrientation, true);
     qiblaStatusEl.textContent = "Kompass aktiv. Bewege das iPhone zur Kalibrierung.";
     updateNeedle();
   } catch {
