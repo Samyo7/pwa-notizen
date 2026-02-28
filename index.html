@@ -829,15 +829,27 @@ cityInput.addEventListener("input", () => {
 
 /* Start */
 function showQibla(){
+  localStorage.setItem("active_view_v1","qibla");
+
   document.getElementById("list").style.display = "none";
   document.getElementById("qiblaOpen").style.display = "none";
   document.getElementById("qiblaView").style.display = "block";
 }
 
+
 function showPrayerTimes(){
+  localStorage.setItem("active_view_v1","prayer");
+
   document.getElementById("list").style.display = "grid";
   document.getElementById("qiblaOpen").style.display = "block";
   document.getElementById("qiblaView").style.display = "none";
+}
+  try {
+  const v = localStorage.getItem("active_view_v1");
+  if (v === "qibla") showQibla();
+  else showPrayerTimes();
+} catch {
+  showPrayerTimes();
 }
 
 render();
