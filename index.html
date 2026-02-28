@@ -217,10 +217,7 @@
             <div class="label">Kompass Richtung</div>
             <div class="value" id="deviceHeading">—</div>
           </div>
-          <div class="line">
-            <div class="label">Nadel Drehung</div>
-            <div class="value" id="needleRotation">—</div>
-          </div>
+
         </div>
       </div>
 
@@ -363,7 +360,7 @@ const qiblaEnableBtn = document.getElementById("qiblaEnable");
 const qiblaNeedleEl = document.getElementById("qiblaNeedle");
 const qiblaBearingEl = document.getElementById("qiblaBearing");
 const deviceHeadingEl = document.getElementById("deviceHeading");
-const needleRotationEl = document.getElementById("needleRotation");
+
 
 locEl.textContent = PLACE ? PLACE.name : "Kein Ort gewählt";
 
@@ -448,14 +445,12 @@ function updateNeedle(){
 
   if (deviceHeading == null || qiblaBearing == null) {
     deviceHeadingEl.textContent = deviceHeading == null ? "—" : `${deviceHeading.toFixed(1)}°`;
-    needleRotationEl.textContent = "—";
     qiblaNeedleEl.style.transform = "rotate(0deg)";
     return;
   }
 
   const rot = normalize360(qiblaBearing - deviceHeading);
   deviceHeadingEl.textContent = `${deviceHeading.toFixed(1)}°`;
-  needleRotationEl.textContent = `${rot.toFixed(1)}°`;
   qiblaNeedleEl.style.transform = `rotate(${rot}deg)`;
 }
 
