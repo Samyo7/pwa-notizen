@@ -665,6 +665,8 @@ function render(){
   const label = document.createElement("div");
   label.className = "label";
   label.textContent = nextInfo.isTomorrow ? "Nächstes (morgen)" : "Nächstes Gebet in";
+  label.style.fontSize = "22px";
+label.style.fontWeight = "900";
 
   const strong = document.createElement("div");
   strong.style.fontWeight = "900";
