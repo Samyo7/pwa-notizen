@@ -96,17 +96,6 @@
       background:#0f0f11;
     }
 
-    .footerCard{
-      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between
-    }
-    button{
-      border:0;border-radius:14px;padding:12px 14px;
-      font-size:15px;font-weight:800;
-    }
-    .btnA{background:#ffffff;color:#0b0b0c}
-    .btnB{background:#1f1f22;color:#fff;border:1px solid var(--line)}
-    .hint{margin-top:8px;color:var(--muted);font-size:12.5px;line-height:1.3}
-
     /* Ort-Suche */
     .searchWrap{display:grid;gap:8px;width:100%}
     .searchInput{
@@ -164,9 +153,7 @@
       position:absolute; top:6px; left:50%; transform:translateX(-50%);
       font-weight:900; font-size:12px; color:rgba(255,255,255,.85);
     }
-    .qiblaInfo{
-      display:grid; gap:8px; min-width:220px; flex:1;
-    }
+    .qiblaInfo{display:grid; gap:8px; min-width:220px; flex:1;}
     .qiblaInfo .line{display:flex; justify-content:space-between; gap:12px}
     .qiblaInfo .label{color:rgba(255,255,255,.7); font-size:13px}
     .qiblaInfo .value{font-variant-numeric:tabular-nums; font-weight:900}
@@ -200,7 +187,10 @@
     </div>
   </header>
 
-  <!-- Qibla Card -->
+  <!-- Prayer list -->
+  <div class="wrap" id="list"></div>
+
+  <!-- Qibla Card (jetzt UNTER den Zeiten) -->
   <div class="wrap">
     <div class="card" id="qiblaCard">
       <div class="qiblaHeader">
@@ -237,23 +227,6 @@
 
       <div class="qiblaHint">
         Tipp: iPhone einmal in einer „8“ bewegen (Kalibrierung). Kompass braucht Zugriff auf Bewegungssensoren.
-      </div>
-    </div>
-  </div>
-
-  <!-- Prayer list -->
-  <div class="wrap" id="list"></div>
-
-  <!-- Footer -->
-  <div class="wrap">
-    <div class="card">
-      <div class="footerCard">
-        <button class="btnA" id="refresh">Jetzt aktualisieren</button>
-        <button class="btnB" id="installHint">Zum Home-Bildschirm</button>
-      </div>
-      <div class="hint">
-        Regeln: Fajr (−12° nautische Dämmerung), Dhuhr (Solar Noon + 15 Minuten), Asr (Shafi’i),
-        Maghrib (Sonnenuntergang), Isha (−18° astronomische Dämmerung).
       </div>
     </div>
   </div>
@@ -381,8 +354,6 @@ const gregEl = document.getElementById("greg");
 const hijriEl = document.getElementById("hijri");
 const statusEl = document.getElementById("status");
 const locEl = document.getElementById("loc");
-const refreshBtn = document.getElementById("refresh");
-const installHintBtn = document.getElementById("installHint");
 
 const cityInput = document.getElementById("cityInput");
 const suggestionsEl = document.getElementById("suggestions");
@@ -438,8 +409,8 @@ function addMinutes(date, minutes){
    ========================= */
 const KAABA = { lat: 21.422487, lon: 39.826206 };
 
-let deviceHeading = null;  // 0..360 (0=N)
-let qiblaBearing = null;   // 0..360
+let deviceHeading = null;
+let qiblaBearing = null;
 
 function toRad(deg){ return deg * Math.PI / 180; }
 function toDeg(rad){ return rad * 180 / Math.PI; }
@@ -572,12 +543,11 @@ function computeAsrShafii(lat, lon, solarNoon, sunset){
    ========================= */
 function getPrayerTimesForToday(){
   const now = new Date();
-
-  // Datum als UTC-Mitternacht (stabil)
   const base = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   const t = Sun.getTimes(base, PLACE.lat, PLACE.lon);
 
   const fajr = t.nauticalDawn;
+  const sunrise = t.sunrise; // ✅ neu
   const dhuhr = addMinutes(t.solarNoon, OFFSETS_MINUTES.dhuhr);
   const asr = computeAsrShafii(PLACE.lat, PLACE.lon, t.solarNoon, t.sunset);
   const maghrib = t.sunset;
@@ -585,11 +555,12 @@ function getPrayerTimesForToday(){
 
   return {
     items: [
-      { key:"fajr",    name:"Fajr",    desc:"Nautische Dämmerung", icon:"🌙", time: fajr },
-      { key:"dhuhr",   name:"Dhuhr",   desc:"15 Minuten nach Sonnenhöchststand", icon:"☀️", time: dhuhr },
-      { key:"asr",     name:"Asr",     desc:"Shafi’i", icon:"🌤️", time: asr },
-      { key:"maghrib", name:"Maghrib", desc:"Sonnenuntergang", icon:"🌅", time: maghrib },
-      { key:"isha",    name:"Isha",    desc:"Astronomische Dämmerung", icon:"🌌", time: isha }
+      { key:"fajr",    name:"Fajr",        desc:"Nautische Dämmerung", icon:"🌙", time: fajr },
+      { key:"sunrise", name:"Sonnenaufgang", desc:"", icon:"🌄", time: sunrise },
+      { key:"dhuhr",   name:"Dhuhr",       desc:"15 Minuten nach Sonnenhöchststand", icon:"☀️", time: dhuhr },
+      { key:"asr",     name:"Asr",         desc:"Shafi’i", icon:"🌤️", time: asr },
+      { key:"maghrib", name:"Maghrib",     desc:"Sonnenuntergang", icon:"🌅", time: maghrib },
+      { key:"isha",    name:"Isha",        desc:"Astronomische Dämmerung", icon:"🌌", time: isha }
     ]
   };
 }
@@ -602,7 +573,7 @@ function findNext(items){
 
   if (upcoming) return { next: upcoming, target: upcoming.time, isTomorrow:false };
 
-  // wenn heute vorbei -> Fajr morgen
+  // Wenn heute vorbei -> Fajr morgen
   const tomorrow = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + 1));
   const t2 = Sun.getTimes(tomorrow, PLACE.lat, PLACE.lon);
   const fajrTomorrow = t2.nauticalDawn;
@@ -714,9 +685,9 @@ function render(){
   listEl.appendChild(top);
   startCountdown(nextInfo.target, val);
 
-  // Gebetskarten
+  // Karten
   data.items.forEach(item => {
-    const isNext = (nextInfo.next.key === item.key);         // auch wenn "morgen"
+    const isNext = (nextInfo.next.key === item.key);
     const isCurrent = currentItem && currentItem.key === item.key;
 
     const card = document.createElement("div");
@@ -754,12 +725,15 @@ function render(){
       nameRow.appendChild(tag);
     }
 
-    const desc = document.createElement("div");
-    desc.className = "desc";
-    desc.textContent = item.desc;
-
-    txt.appendChild(nameRow);
-    txt.appendChild(desc);
+    if (item.desc) {
+      const desc = document.createElement("div");
+      desc.className = "desc";
+      desc.textContent = item.desc;
+      txt.appendChild(nameRow);
+      txt.appendChild(desc);
+    } else {
+      txt.appendChild(nameRow);
+    }
 
     l.appendChild(icon);
     l.appendChild(txt);
@@ -838,22 +812,6 @@ cityInput.addEventListener("input", () => {
       .catch(() => {});
   }, 250);
 });
-
-/* =========================
-   Buttons + Offline Cache
-   ========================= */
-refreshBtn.onclick = () => {
-  statusEl.textContent = "Aktualisieren…";
-  setTimeout(render, 50);
-};
-
-installHintBtn.onclick = () => {
-  alert("Auf dem iPhone in Safari: Teilen → „Zum Home-Bildschirm“ → Hinzufügen.");
-};
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./sw.js").catch(()=>{});
-}
 
 /* Start */
 render();
