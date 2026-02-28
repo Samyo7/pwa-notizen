@@ -664,12 +664,12 @@ function render(){
   const left = document.createElement("div");
   const label = document.createElement("div");
   label.className = "label";
-  label.textContent = nextInfo.isTomorrow ? "Nächstes (morgen)" : "Nächstes";
+  label.textContent = nextInfo.isTomorrow ? "Nächstes (morgen)" : "Nächstes Gebet in";
 
   const strong = document.createElement("div");
   strong.style.fontWeight = "900";
   strong.style.fontSize = "16px";
-  strong.textContent = `${nextInfo.next.name} um ${formatTime(nextInfo.target)}`;
+  strong.textContent = ""; 
 
   left.appendChild(label);
   left.appendChild(strong);
