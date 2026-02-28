@@ -1,348 +1,821 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Gebetszeiten</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gebetszeiten</title>
 
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0b0b0c" />
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b0b0c" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<style>
+  <style>
+    :root{
+      --bg:#0b0b0c;
+      --card:#1b1b1e;
+      --card2:#141416;
+      --line:#2a2a2e;
+      --text:#ffffff;
+      --muted:rgba(255,255,255,.7);
+      --next:#112941; /* blau */
+      --nextLine:#1e4d76;
+      --current:#1d2b17; /* grün */
+      --currentLine:#3b6a2a;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,system-ui,Segoe UI,Roboto,Arial;
+      margin:0;background:var(--bg);color:var(--text)
+    }
+    header{padding:18px 16px 10px}
+    h1{margin:0;font-size:26px;letter-spacing:.2px}
+    .meta{margin-top:10px;display:grid;gap:10px;color:var(--muted);font-size:14px}
+    .meta .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .pill{
+      border:1px solid var(--line);
+      border-radius:999px;padding:6px 10px;
+      background:#0f0f11;color:var(--text);
+      font-variant-numeric: tabular-nums;
+    }
 
-:root{
---bg:#0b0b0c;
---card:#1b1b1e;
---card2:#141416;
---line:#2a2a2e;
---text:#ffffff;
---muted:rgba(255,255,255,.7);
---next:#112941;
---nextLine:#1e4d76;
---current:#1d2b17;
---currentLine:#3b6a2a;
-}
+    .wrap{padding:12px 16px 18px;display:grid;gap:12px}
+    .card{
+      background:var(--card2);border:1px solid var(--line);
+      border-radius:18px;padding:14px 14px;
+    }
 
-*{box-sizing:border-box}
+    .item{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px;border-radius:18px;border:1px solid var(--line);
+      background:var(--card);
+    }
+    .item.next{
+      background:var(--next);
+      border-color:var(--nextLine);
+    }
+    .item.current{
+      background:var(--current);
+      border-color:var(--currentLine);
+    }
 
-body{
-font-family:-apple-system,BlinkMacSystemFont,system-ui,Segoe UI,Roboto,Arial;
-margin:0;background:var(--bg);color:var(--text)
-}
+    .left{display:flex;gap:12px;align-items:flex-start}
+    .icon{
+      width:36px;height:36px;border-radius:12px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.08);
+      font-size:18px;
+      flex:0 0 auto;
+    }
+    .txt{display:grid;gap:4px}
+    .nameRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .name{font-size:18px;font-weight:800}
+    .tag{
+      font-size:12px;font-weight:800;letter-spacing:.08em;
+      padding:4px 8px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      color:rgba(255,255,255,.9);
+    }
+    .desc{font-size:13px;color:rgba(255,255,255,.72);line-height:1.25}
+    .time{
+      font-size:22px;font-weight:900;
+      font-variant-numeric: tabular-nums;
+      letter-spacing:.2px;
+    }
 
-header{padding:18px 16px 10px}
-h1{margin:0;font-size:26px}
+    .countdown{
+      margin-top:10px;
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+    }
+    .countdown .label{color:var(--muted);font-size:13px}
+    .countdown .value{
+      font-size:16px;font-weight:900;
+      font-variant-numeric: tabular-nums;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid var(--line);
+      background:#0f0f11;
+    }
 
-.meta{margin-top:10px;display:grid;gap:10px;color:var(--muted);font-size:14px}
+    /* Ort-Suche */
+    .searchWrap{display:grid;gap:8px;width:100%}
+    .searchInput{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0f0f11;
+      color:var(--text);
+      font-size:15px;
+      outline:none;
+    }
+    .suggestions{display:grid;gap:8px}
+    .suggestion{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:var(--card2);
+      cursor:pointer;
+      color:rgba(255,255,255,.92);
+      user-select:none;
+    }
+    .suggestion:active{transform:scale(.99)}
+    .suggestionSmall{font-size:12.5px;color:var(--muted);margin-top:4px}
 
-.meta .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-
-.pill{
-border:1px solid var(--line);
-border-radius:999px;
-padding:6px 10px;
-background:#0f0f11;color:var(--text);
-font-variant-numeric:tabular-nums;
-}
-
-.wrap{padding:12px 16px 18px;display:grid;gap:12px}
-
-.card{
-background:var(--card2);
-border:1px solid var(--line);
-border-radius:18px;
-padding:14px;
-}
-
-.item{
-display:flex;
-align-items:center;
-justify-content:space-between;
-padding:14px;
-border-radius:18px;
-border:1px solid var(--line);
-background:var(--card);
-}
-
-.item.next{
-background:var(--next);
-border-color:var(--nextLine);
-}
-
-.item.current{
-background:var(--current);
-border-color:var(--currentLine);
-}
-
-.left{display:flex;gap:12px;align-items:flex-start}
-
-.icon{
-width:36px;height:36px;border-radius:12px;
-display:grid;place-items:center;
-background:rgba(255,255,255,.08);
-font-size:18px;
-}
-
-.txt{display:grid;gap:4px}
-
-.nameRow{display:flex;gap:8px;align-items:center}
-
-.name{font-size:18px;font-weight:800}
-
-.desc{font-size:13px;color:rgba(255,255,255,.72)}
-
-.time{
-font-size:22px;
-font-weight:900;
-font-variant-numeric:tabular-nums;
-}
-
-/* Qibla */
-
-.qiblaHeader{display:flex;justify-content:space-between;align-items:center}
-
-.qiblaTitle{font-weight:900;font-size:16px}
-
-.qiblaRow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px}
-
-.compassCircle{
-width:160px;
-height:160px;
-border-radius:50%;
-border:1px solid var(--line);
-background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.08), rgba(255,255,255,0));
-position:relative;
-}
-
-.compassTick{
-position:absolute;
-inset:10px;
-border-radius:50%;
-border:1px dashed rgba(255,255,255,.12);
-}
-
-.compassN{
-position:absolute;
-top:6px;
-left:50%;
-transform:translateX(-50%);
-font-weight:900;
-font-size:12px;
-}
-
-.compassE{
-position:absolute;
-right:6px;
-top:50%;
-transform:translateY(-50%);
-font-weight:900;
-font-size:12px;
-}
-
-.compassS{
-position:absolute;
-bottom:6px;
-left:50%;
-transform:translateX(-50%);
-font-weight:900;
-font-size:12px;
-}
-
-.compassW{
-position:absolute;
-left:6px;
-top:50%;
-transform:translateY(-50%);
-font-weight:900;
-font-size:12px;
-}
-
-.compassNeedle{
-width:4px;
-height:70px;
-background:#ff3b30;
-position:absolute;
-bottom:50%;
-left:50%;
-transform-origin:50% 100%;
-transform:translateX(-50%) rotate(0deg);
-border-radius:3px;
-}
-
-.compassDot{
-width:12px;height:12px;border-radius:50%;
-background:white;
-position:absolute;
-top:50%;left:50%;
-transform:translate(-50%,-50%);
-}
-
-.kaaba{
-position:absolute;
-top:12px;
-left:50%;
-transform:translateX(-50%);
-font-size:20px;
-}
-
-.qiblaBtn{
-background:#ffffff;
-color:#0b0b0c;
-border:0;
-border-radius:14px;
-padding:10px 12px;
-font-weight:900;
-font-size:14px;
-}
-
-</style>
+    /* Qibla-Kompass */
+    .qiblaHeader{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .qiblaTitle{font-weight:900;font-size:16px}
+    .qiblaMeta{color:rgba(255,255,255,.72);font-size:13px;margin-top:4px}
+    .qiblaRow{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px}
+    .compassCircle{
+      width:160px;height:160px;border-radius:999px;
+      border:1px solid var(--line);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.08), rgba(255,255,255,0));
+      position:relative; display:grid; place-items:center;
+    }
+    .compassTick{
+      position:absolute; inset:10px; border-radius:999px;
+      border:1px dashed rgba(255,255,255,.12);
+    }
+    .compassNeedle{
+      width:4px;height:62px;border-radius:999px;
+      background:rgba(255,255,255,.92);
+      transform-origin:50% 54px;
+      transform:rotate(0deg);
+      position:absolute; top:22px; left:50%; margin-left:-2px;
+      box-shadow:0 6px 18px rgba(0,0,0,.4);
+    }
+    .compassDot{
+      width:12px;height:12px;border-radius:999px;
+      background:rgba(255,255,255,.9);
+      position:absolute;
+    }
+    .compassN{
+      position:absolute; top:6px; left:50%; transform:translateX(-50%);
+      font-weight:900; font-size:12px; color:rgba(255,255,255,.85);
+    }
+    .qiblaInfo{display:grid; gap:8px; min-width:220px; flex:1;}
+    .qiblaInfo .line{display:flex; justify-content:space-between; gap:12px}
+    .qiblaInfo .label{color:rgba(255,255,255,.7); font-size:13px}
+    .qiblaInfo .value{font-variant-numeric:tabular-nums; font-weight:900}
+    .qiblaBtn{
+      background:#ffffff;color:#0b0b0c;border:0;border-radius:14px;
+      padding:10px 12px;font-weight:900;font-size:14px;
+    }
+    .qiblaHint{color:rgba(255,255,255,.65); font-size:12.5px; line-height:1.3; margin-top:10px}
+  </style>
 </head>
 
 <body>
+  <header>
+    <h1>Gebetszeiten</h1>
 
-<header>
+    <div class="meta">
+      <div class="row">
+        <span id="greg">—</span>
+        <span class="pill" id="hijri">—</span>
+      </div>
 
-<h1>Gebetszeiten</h1>
+      <div class="row">
+        <span class="pill" id="loc">Kein Ort gewählt</span>
+        <span class="pill" id="status">Ort auswählen</span>
+      </div>
 
-<div class="meta">
+      <div class="searchWrap">
+        <input id="cityInput" class="searchInput" type="text" placeholder="Ort suchen (z.B. Hamburg) …">
+        <div id="suggestions" class="suggestions"></div>
+      </div>
+    </div>
+  </header>
 
-<div class="row">
-<span id="greg">—</span>
-<span class="pill" id="hijri">—</span>
-</div>
+  <!-- Prayer list -->
+  <div class="wrap" id="list"></div>
 
-<div class="row">
-<span class="pill" id="loc">Kein Ort gewählt</span>
-<span class="pill" id="status">Ort auswählen</span>
-</div>
+  <!-- Qibla Card (jetzt UNTER den Zeiten) -->
+  <div class="wrap">
+    <div class="card" id="qiblaCard">
+      <div class="qiblaHeader">
+        <div>
+          <div class="qiblaTitle">Qibla Kompass</div>
+          <div class="qiblaMeta" id="qiblaStatus">Ort auswählen, dann Kompass aktivieren.</div>
+        </div>
+        <button class="qiblaBtn" id="qiblaEnable">Kompass aktivieren</button>
+      </div>
 
-<div class="searchWrap">
-<input id="cityInput" class="searchInput" placeholder="Ort suchen">
-<div id="suggestions" class="suggestions"></div>
-</div>
+      <div class="qiblaRow">
+        <div class="compassCircle" aria-label="Kompass">
+          <div class="compassTick"></div>
+          <div class="compassN">N</div>
+          <div class="compassNeedle" id="qiblaNeedle"></div>
+          <div class="compassDot"></div>
+        </div>
 
-</div>
+        <div class="qiblaInfo">
+          <div class="line">
+            <div class="label">Qibla Richtung</div>
+            <div class="value" id="qiblaBearing">—</div>
+          </div>
+          <div class="line">
+            <div class="label">Kompass Richtung</div>
+            <div class="value" id="deviceHeading">—</div>
+          </div>
+          <div class="line">
+            <div class="label">Nadel Drehung</div>
+            <div class="value" id="needleRotation">—</div>
+          </div>
+        </div>
+      </div>
 
-</header>
-
-<div class="wrap" id="list"></div>
-
-<div class="wrap">
-
-<div class="card">
-
-<div class="qiblaHeader">
-<div class="qiblaTitle">Qibla Kompass</div>
-<button class="qiblaBtn" id="qiblaEnable">Kompass aktivieren</button>
-</div>
-
-<div class="qiblaRow">
-
-<div class="compassCircle">
-
-<div class="compassTick"></div>
-
-<div class="compassN">N</div>
-<div class="compassE">O</div>
-<div class="compassS">S</div>
-<div class="compassW">W</div>
-
-<div class="compassNeedle" id="qiblaNeedle"></div>
-
-<div class="kaaba" id="kaabaIcon">🕋</div>
-
-<div class="compassDot"></div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
+      <div class="qiblaHint">
+        Tipp: iPhone einmal in einer „8“ bewegen (Kalibrierung). Kompass braucht Zugriff auf Bewegungssensoren.
+      </div>
+    </div>
+  </div>
 
 <script>
+/* =========================
+   Ort (kein Default) + Speicherung
+   ========================= */
+let PLACE = null;
+try {
+  const savedPlace = localStorage.getItem("selected_place_v1");
+  if (savedPlace) PLACE = JSON.parse(savedPlace);
+} catch {}
 
-const KAABA={lat:21.422487,lon:39.826206}
+const OFFSETS_MINUTES = { dhuhr: 15 };
 
-let deviceHeading=null
-let qiblaBearing=null
+/* =========================
+   Mini-Sonnenrechner (kompakt)
+   ========================= */
+const Sun = (() => {
+  const rad = Math.PI / 180;
+  const dayMs = 86400000;
+  const J1970 = 2440588;
+  const J2000 = 2451545;
 
-const qiblaNeedleEl=document.getElementById("qiblaNeedle")
-const kaabaIcon=document.getElementById("kaabaIcon")
+  function toJulian(date){ return date.valueOf() / dayMs - 0.5 + J1970; }
+  function fromJulian(j){ return new Date((j + 0.5 - J1970) * dayMs); }
+  function toDays(date){ return toJulian(date) - J2000; }
 
-function toRad(d){return d*Math.PI/180}
-function toDeg(r){return r*180/Math.PI}
+  function rightAscension(l, b){
+    const e = rad * 23.4397;
+    return Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l));
+  }
+  function declination(l, b){
+    const e = rad * 23.4397;
+    return Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l));
+  }
+  function azimuth(H, phi, dec){
+    return Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
+  }
+  function altitude(H, phi, dec){
+    return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
+  }
+  function siderealTime(d, lw){
+    return rad * (280.16 + 360.9856235 * d) - lw;
+  }
 
-function normalize360(x){
-let v=x%360
-if(v<0)v+=360
-return v
+  function solarMeanAnomaly(d){
+    return rad * (357.5291 + 0.98560028 * d);
+  }
+  function eclipticLongitude(M){
+    const C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+    const P = rad * 102.9372;
+    return M + C + P + Math.PI;
+  }
+  function sunCoords(d){
+    const M = solarMeanAnomaly(d);
+    const L = eclipticLongitude(M);
+    return { dec: declination(L, 0), ra: rightAscension(L, 0), M, L };
+  }
+
+  function getPosition(date, lat, lon){
+    const lw = rad * -lon;
+    const phi = rad * lat;
+    const d = toDays(date);
+    const c = sunCoords(d);
+    const H = siderealTime(d, lw) - c.ra;
+    return { azimuth: azimuth(H, phi, c.dec), altitude: altitude(H, phi, c.dec) };
+  }
+
+  function julianCycle(d, lw){ return Math.round(d - 0.0009 - lw / (2 * Math.PI)); }
+  function approxTransit(Ht, lw, n){ return 0.0009 + (Ht + lw) / (2 * Math.PI) + n; }
+  function solarTransitJ(ds, M, L){ return J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L); }
+  function hourAngle(h, phi, d){
+    return Math.acos((Math.sin(h) - Math.sin(phi) * Math.sin(d)) / (Math.cos(phi) * Math.cos(d)));
+  }
+  function getSetJ(h, lw, phi, dec, n, M, L){
+    const w = hourAngle(h, phi, dec);
+    const a = approxTransit(w, lw, n);
+    return solarTransitJ(a, M, L);
+  }
+
+  function getTimes(date, lat, lon){
+    const lw = rad * -lon;
+    const phi = rad * lat;
+    const d = toDays(date);
+
+    const n = julianCycle(d, lw);
+    const ds = approxTransit(0, lw, n);
+
+    const c = sunCoords(ds);
+    const Jnoon = solarTransitJ(ds, c.M, c.L);
+
+    const hSunrise = rad * (-0.833);
+    const Jset = getSetJ(hSunrise, lw, phi, c.dec, n, c.M, c.L);
+    const Jrise = Jnoon - (Jset - Jnoon);
+
+    const hNautical = rad * (-12);
+    const JnautSet = getSetJ(hNautical, lw, phi, c.dec, n, c.M, c.L);
+    const JnautRise = Jnoon - (JnautSet - Jnoon);
+
+    const hAstro = rad * (-18);
+    const Jnight = getSetJ(hAstro, lw, phi, c.dec, n, c.M, c.L);
+    const JnightEnd = Jnoon - (Jnight - Jnoon);
+
+    return {
+      solarNoon: fromJulian(Jnoon),
+      sunrise: fromJulian(Jrise),
+      sunset: fromJulian(Jset),
+      nauticalDawn: fromJulian(JnautRise),
+      nauticalDusk: fromJulian(JnautSet),
+      night: fromJulian(Jnight),
+      nightEnd: fromJulian(JnightEnd)
+    };
+  }
+
+  return { getTimes, getPosition };
+})();
+
+/* =========================
+   UI Elemente
+   ========================= */
+const listEl = document.getElementById("list");
+const gregEl = document.getElementById("greg");
+const hijriEl = document.getElementById("hijri");
+const statusEl = document.getElementById("status");
+const locEl = document.getElementById("loc");
+
+const cityInput = document.getElementById("cityInput");
+const suggestionsEl = document.getElementById("suggestions");
+
+// Qibla UI
+const qiblaStatusEl = document.getElementById("qiblaStatus");
+const qiblaEnableBtn = document.getElementById("qiblaEnable");
+const qiblaNeedleEl = document.getElementById("qiblaNeedle");
+const qiblaBearingEl = document.getElementById("qiblaBearing");
+const deviceHeadingEl = document.getElementById("deviceHeading");
+const needleRotationEl = document.getElementById("needleRotation");
+
+locEl.textContent = PLACE ? PLACE.name : "Kein Ort gewählt";
+
+/* =========================
+   Helper
+   ========================= */
+function pad2(n){ return String(n).padStart(2, "0"); }
+function formatTime(date){ return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`; }
+
+function formatGregorian(date){
+  try {
+    return new Intl.DateTimeFormat("de-DE", {
+      weekday:"short", year:"numeric", month:"2-digit", day:"2-digit"
+    }).format(date);
+  } catch {
+    return `${pad2(date.getDate())}.${pad2(date.getMonth()+1)}.${date.getFullYear()}`;
+  }
 }
 
-function computeBearing(lat1,lon1,lat2,lon2){
+function formatHijri(date){
+  const candidates = [
+    "de-DE-u-ca-islamic-umalqura",
+    "de-DE-u-ca-islamic",
+    "en-US-u-ca-islamic-umalqura",
+    "en-US-u-ca-islamic"
+  ];
+  for (const loc of candidates){
+    try {
+      const s = new Intl.DateTimeFormat(loc, { day:"2-digit", month:"long", year:"numeric" }).format(date);
+      if (s && s !== "Invalid Date") return s;
+    } catch {}
+  }
+  return "Hijri-Datum nicht verfügbar";
+}
 
-const φ1=toRad(lat1)
-const φ2=toRad(lat2)
-const Δλ=toRad(lon2-lon1)
+function addMinutes(date, minutes){
+  return new Date(date.getTime() + minutes * 60000);
+}
 
-const y=Math.sin(Δλ)*Math.cos(φ2)
-const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ)
+/* =========================
+   Qibla Logik
+   ========================= */
+const KAABA = { lat: 21.422487, lon: 39.826206 };
 
-return normalize360(toDeg(Math.atan2(y,x)))
+let deviceHeading = null;
+let qiblaBearing = null;
 
+function toRad(deg){ return deg * Math.PI / 180; }
+function toDeg(rad){ return rad * 180 / Math.PI; }
+
+function normalize360(x){
+  let v = x % 360;
+  if (v < 0) v += 360;
+  return v;
+}
+
+function computeBearing(lat1, lon1, lat2, lon2){
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δλ = toRad(lon2 - lon1);
+
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+  const θ = Math.atan2(y, x);
+  return normalize360(toDeg(θ));
+}
+
+function updateQiblaBearing(){
+  if (!PLACE) {
+    qiblaBearing = null;
+    qiblaBearingEl.textContent = "—";
+    qiblaStatusEl.textContent = "Ort auswählen, dann Kompass aktivieren.";
+    return;
+  }
+  qiblaBearing = computeBearing(PLACE.lat, PLACE.lon, KAABA.lat, KAABA.lon);
+  qiblaBearingEl.textContent = `${qiblaBearing.toFixed(1)}°`;
+  qiblaStatusEl.textContent = `Ort: ${PLACE.name}`;
 }
 
 function updateNeedle(){
+  updateQiblaBearing();
 
-if(!PLACE)return
+  if (deviceHeading == null || qiblaBearing == null) {
+    deviceHeadingEl.textContent = deviceHeading == null ? "—" : `${deviceHeading.toFixed(1)}°`;
+    needleRotationEl.textContent = "—";
+    qiblaNeedleEl.style.transform = "rotate(0deg)";
+    return;
+  }
 
-qiblaBearing=computeBearing(PLACE.lat,PLACE.lon,KAABA.lat,KAABA.lon)
-
-if(deviceHeading===null)return
-
-const rot=normalize360(qiblaBearing-deviceHeading)
-
-qiblaNeedleEl.style.transform=`translateX(-50%) rotate(${rot}deg)`
-kaabaIcon.style.transform=`translateX(-50%) rotate(${rot}deg)`
-
+  const rot = normalize360(qiblaBearing - deviceHeading);
+  deviceHeadingEl.textContent = `${deviceHeading.toFixed(1)}°`;
+  needleRotationEl.textContent = `${rot.toFixed(1)}°`;
+  qiblaNeedleEl.style.transform = `rotate(${rot}deg)`;
 }
 
 function handleOrientation(e){
+  let heading = null;
 
-let heading=null
+  if (typeof e.webkitCompassHeading === "number") {
+    heading = e.webkitCompassHeading;
+  } else if (typeof e.alpha === "number") {
+    heading = 360 - e.alpha;
+  }
 
-if(typeof e.webkitCompassHeading==="number"){
-heading=e.webkitCompassHeading
-}else if(typeof e.alpha==="number"){
-heading=360-e.alpha
-}
+  if (heading == null) {
+    deviceHeading = null;
+    updateNeedle();
+    return;
+  }
 
-if(heading===null)return
+  const angle =
+    (screen.orientation && typeof screen.orientation.angle === "number")
+      ? screen.orientation.angle
+      : (typeof window.orientation === "number" ? window.orientation : 0);
 
-deviceHeading=normalize360(heading)
-
-updateNeedle()
-
+  deviceHeading = normalize360(heading + angle);
+  updateNeedle();
 }
 
 async function enableCompass(){
+  if (!PLACE) {
+    qiblaStatusEl.textContent = "Bitte erst einen Ort auswählen.";
+    return;
+  }
 
-if(typeof DeviceOrientationEvent!=="undefined" && typeof DeviceOrientationEvent.requestPermission==="function"){
-const res=await DeviceOrientationEvent.requestPermission()
-if(res!=="granted")return
+  try {
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== "granted") {
+        qiblaStatusEl.textContent = "Keine Erlaubnis für Bewegungssensoren.";
+        return;
+      }
+    }
+
+    window.addEventListener("deviceorientationabsolute", handleOrientation, true);
+    window.addEventListener("deviceorientation", handleOrientation, true);
+
+    qiblaStatusEl.textContent = "Kompass aktiv. Bewege das iPhone zur Kalibrierung.";
+    updateNeedle();
+  } catch {
+    qiblaStatusEl.textContent = "Kompass konnte nicht aktiviert werden.";
+  }
 }
 
-window.addEventListener("deviceorientationabsolute",handleOrientation,true)
-window.addEventListener("deviceorientation",handleOrientation,true)
+qiblaEnableBtn.addEventListener("click", enableCompass);
 
+/* =========================
+   Asr Shafi’i
+   ========================= */
+function computeAsrShafii(lat, lon, solarNoon, sunset){
+  const posNoon = Sun.getPosition(solarNoon, lat, lon);
+  const altNoon = posNoon.altitude;
+
+  const tanNoon = Math.tan(altNoon);
+  if (!isFinite(tanNoon) || tanNoon <= 0) return null;
+
+  const tanAsr = 1 / (1 + (1 / tanNoon));
+  const altAsr = Math.atan(tanAsr);
+
+  let lo = new Date(solarNoon.getTime());
+  let hi = new Date(sunset.getTime());
+  if (hi <= lo) return null;
+
+  for (let i = 0; i < 40; i++){
+    const mid = new Date((lo.getTime() + hi.getTime()) / 2);
+    const altMid = Sun.getPosition(mid, lat, lon).altitude;
+    if (altMid > altAsr) lo = mid;
+    else hi = mid;
+  }
+  return hi;
 }
 
-document.getElementById("qiblaEnable").addEventListener("click",enableCompass)
+/* =========================
+   Gebetszeiten
+   ========================= */
+function getPrayerTimesForToday(){
+  const now = new Date();
+  const base = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const t = Sun.getTimes(base, PLACE.lat, PLACE.lon);
 
+  const fajr = t.nauticalDawn;
+  const sunrise = t.sunrise; // ✅ neu
+  const dhuhr = addMinutes(t.solarNoon, OFFSETS_MINUTES.dhuhr);
+  const asr = computeAsrShafii(PLACE.lat, PLACE.lon, t.solarNoon, t.sunset);
+  const maghrib = t.sunset;
+  const isha = t.night;
+
+  return {
+    items: [
+      { key:"fajr",    name:"Fajr",        desc:"Nautische Dämmerung", icon:"🌙", time: fajr },
+      { key:"sunrise", name:"Sonnenaufgang", desc:"", icon:"🌄", time: sunrise },
+      { key:"dhuhr",   name:"Dhuhr",       desc:"15 Minuten nach Sonnenhöchststand", icon:"☀️", time: dhuhr },
+      { key:"asr",     name:"Asr",         desc:"Shafi’i", icon:"🌤️", time: asr },
+      { key:"maghrib", name:"Maghrib",     desc:"Sonnenuntergang", icon:"🌅", time: maghrib },
+      { key:"isha",    name:"Isha",        desc:"Astronomische Dämmerung", icon:"🌌", time: isha }
+    ]
+  };
+}
+
+function findNext(items){
+  const now = new Date();
+  const upcoming = items
+    .filter(x => x.time instanceof Date && x.time.getTime() >= now.getTime())
+    .sort((a,b)=>a.time-b.time)[0];
+
+  if (upcoming) return { next: upcoming, target: upcoming.time, isTomorrow:false };
+
+  // Wenn heute vorbei -> Fajr morgen
+  const tomorrow = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  const t2 = Sun.getTimes(tomorrow, PLACE.lat, PLACE.lon);
+  const fajrTomorrow = t2.nauticalDawn;
+
+  const next = { key:"fajr", name:"Fajr", desc:"Nautische Dämmerung", icon:"🌙", time: fajrTomorrow };
+  return { next, target: fajrTomorrow, isTomorrow:true };
+}
+
+function findCurrent(items){
+  const now = new Date();
+  const sorted = items
+    .filter(x => x.time instanceof Date)
+    .slice()
+    .sort((a,b)=>a.time-b.time);
+
+  if (sorted.length === 0) return null;
+  if (now.getTime() < sorted[0].time.getTime()) return null;
+
+  let current = sorted[0];
+  for (const it of sorted){
+    if (it.time.getTime() <= now.getTime()) current = it;
+  }
+  return current;
+}
+
+/* =========================
+   Countdown
+   ========================= */
+let countdownTimer = null;
+function startCountdown(targetDate, valueEl){
+  if (countdownTimer) clearInterval(countdownTimer);
+
+  function tick(){
+    const now = new Date();
+    let diff = targetDate.getTime() - now.getTime();
+    if (diff < 0) diff = 0;
+
+    const total = Math.floor(diff / 1000);
+    const hh = Math.floor(total / 3600);
+    const mm = Math.floor((total % 3600) / 60);
+    const ss = total % 60;
+
+    valueEl.textContent = `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+  }
+  tick();
+  countdownTimer = setInterval(tick, 1000);
+}
+
+/* =========================
+   Render
+   ========================= */
+function render(){
+  const now = new Date();
+  gregEl.textContent = formatGregorian(now);
+  hijriEl.textContent = formatHijri(now);
+
+  if (!PLACE) {
+    statusEl.textContent = "Ort auswählen";
+    locEl.textContent = "Kein Ort gewählt";
+    listEl.innerHTML = `
+      <div class="card">
+        <div style="font-weight:800;font-size:16px;margin-bottom:8px">Bitte Ort auswählen</div>
+        <div style="color:rgba(255,255,255,.7);font-size:14px">
+          Suche oben nach einer Stadt, um Gebetszeiten anzuzeigen.
+        </div>
+      </div>
+    `;
+    updateNeedle();
+    return;
+  }
+
+  statusEl.textContent = "Aktualisiert";
+  locEl.textContent = PLACE.name;
+
+  const data = getPrayerTimesForToday();
+  const nextInfo = findNext(data.items);
+  const currentItem = findCurrent(data.items);
+
+  listEl.innerHTML = "";
+
+  // Countdown oben
+  const top = document.createElement("div");
+  top.className = "card";
+
+  const cd = document.createElement("div");
+  cd.className = "countdown";
+
+  const left = document.createElement("div");
+  const label = document.createElement("div");
+  label.className = "label";
+  label.textContent = nextInfo.isTomorrow ? "Nächstes (morgen)" : "Nächstes";
+
+  const strong = document.createElement("div");
+  strong.style.fontWeight = "900";
+  strong.style.fontSize = "16px";
+  strong.textContent = `${nextInfo.next.name} um ${formatTime(nextInfo.target)}`;
+
+  left.appendChild(label);
+  left.appendChild(strong);
+
+  const val = document.createElement("div");
+  val.className = "value";
+  val.textContent = "—";
+
+  cd.appendChild(left);
+  cd.appendChild(val);
+  top.appendChild(cd);
+
+  listEl.appendChild(top);
+  startCountdown(nextInfo.target, val);
+
+  // Karten
+  data.items.forEach(item => {
+    const isNext = (nextInfo.next.key === item.key);
+    const isCurrent = currentItem && currentItem.key === item.key;
+
+    const card = document.createElement("div");
+    card.className = "item"
+      + (isNext ? " next" : "")
+      + (isCurrent && !isNext ? " current" : "");
+
+    const l = document.createElement("div");
+    l.className = "left";
+
+    const icon = document.createElement("div");
+    icon.className = "icon";
+    icon.textContent = item.icon;
+
+    const txt = document.createElement("div");
+    txt.className = "txt";
+
+    const nameRow = document.createElement("div");
+    nameRow.className = "nameRow";
+
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = item.name;
+    nameRow.appendChild(name);
+
+    if (isNext) {
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = "NÄCHSTES";
+      nameRow.appendChild(tag);
+    } else if (isCurrent) {
+      const tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = "AKTUELL";
+      nameRow.appendChild(tag);
+    }
+
+    if (item.desc) {
+      const desc = document.createElement("div");
+      desc.className = "desc";
+      desc.textContent = item.desc;
+      txt.appendChild(nameRow);
+      txt.appendChild(desc);
+    } else {
+      txt.appendChild(nameRow);
+    }
+
+    l.appendChild(icon);
+    l.appendChild(txt);
+
+    const right = document.createElement("div");
+    right.className = "time";
+    right.textContent = (item.time instanceof Date) ? formatTime(item.time) : "—";
+
+    card.appendChild(l);
+    card.appendChild(right);
+
+    listEl.appendChild(card);
+  });
+
+  updateNeedle();
+}
+
+/* =========================
+   Ort-Suche (Autocomplete)
+   ========================= */
+let searchTimeout = null;
+
+function clearSuggestions(){
+  suggestionsEl.innerHTML = "";
+}
+
+function setPlace(name, lat, lon){
+  PLACE = { name, lat, lon };
+  try { localStorage.setItem("selected_place_v1", JSON.stringify(PLACE)); } catch {}
+  locEl.textContent = PLACE.name;
+  clearSuggestions();
+  cityInput.value = "";
+  render();
+}
+
+cityInput.addEventListener("input", () => {
+  const value = cityInput.value.trim();
+  if (value.length < 2) {
+    clearSuggestions();
+    return;
+  }
+
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(value)}&count=6&language=de&format=json`)
+      .then(res => res.json())
+      .then(data => {
+        clearSuggestions();
+        if (!data || !data.results || !Array.isArray(data.results)) return;
+
+        data.results.forEach(place => {
+          const div = document.createElement("div");
+          div.className = "suggestion";
+
+          const title = document.createElement("div");
+          title.textContent = `${place.name}${place.admin1 ? ", " + place.admin1 : ""}, ${place.country}`;
+
+          const small = document.createElement("div");
+          small.className = "suggestionSmall";
+          small.textContent = `Breite ${place.latitude.toFixed(3)} • Länge ${place.longitude.toFixed(3)}`;
+
+          div.appendChild(title);
+          div.appendChild(small);
+
+          div.onclick = () => {
+            setPlace(
+              `${place.name}${place.admin1 ? ", " + place.admin1 : ""}, ${place.country}`,
+              place.latitude,
+              place.longitude
+            );
+          };
+
+          suggestionsEl.appendChild(div);
+        });
+      })
+      .catch(() => {});
+  }, 250);
+});
+
+/* Start */
+render();
+setInterval(render, 30 * 60 * 1000);
 </script>
-
 </body>
 </html>
