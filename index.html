@@ -188,10 +188,16 @@
 
   <!-- Prayer list -->
   <div class="wrap" id="list"></div>
+  <div class="wrap" id="qiblaOpen">
+  <div class="card" style="text-align:center;cursor:pointer;" onclick="showQibla()">
+    <div style="font-size:34px">🧭</div>
+    <div style="font-weight:800;margin-top:6px">Qibla Kompass</div>
+  </div>
+</div>
 
   <!-- Qibla Card (jetzt UNTER den Zeiten) -->
-  <div class="wrap">
-    <div class="card" id="qiblaCard">
+  <div class="wrap" id="qiblaView" style="display:none;">
+  <div class="card" id="qiblaCard">
       <div class="qiblaHeader">
         <div>
           <div class="qiblaTitle">Qibla Kompass</div>
@@ -224,6 +230,10 @@
       <div class="qiblaHint">
         Tipp: iPhone einmal in einer „8“ bewegen (Kalibrierung). Kompass braucht Zugriff auf Bewegungssensoren.
       </div>
+    <div class="card" style="text-align:center;cursor:pointer;" onclick="showPrayerTimes()">
+  <div style="font-size:34px">📅</div>
+  <div style="font-weight:800;margin-top:6px">Gebetszeiten</div>
+</div>
     </div>
   </div>
 
@@ -810,6 +820,18 @@ cityInput.addEventListener("input", () => {
 });
 
 /* Start */
+function showQibla(){
+  document.getElementById("list").style.display = "none";
+  document.getElementById("qiblaOpen").style.display = "none";
+  document.getElementById("qiblaView").style.display = "block";
+}
+
+function showPrayerTimes(){
+  document.getElementById("list").style.display = "grid";
+  document.getElementById("qiblaOpen").style.display = "block";
+  document.getElementById("qiblaView").style.display = "none";
+}
+
 render();
 setInterval(render, 30 * 60 * 1000);
 </script>
